@@ -2,29 +2,18 @@ from collections import OrderedDict
 import pandas as pd
 import csv
 
-from nba_api.stats.static import players
-from nba_api.stats.endpoints import leaguegamefinder
-from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import playergamelogs
 
 playerDict = {}
 predictList = []
 
 
-def main():
-    #define dict
-    #add player
-    #find player
-    #sort players
-    #fantasy totals
-    #player dict holds game dict, holds stats dict
-    #add game
-    #playerlist = player: game:dict(game) game = stats:dict(stats) stats = points etc
-    
+def main():  
     stripStats(getPlayerGameLogs())
     makePredictList()
     exportCSV()
-    
+
+#inserts game stats to playerDict   
 def addPlayer(name, date, p, r, a, s, b, to, fgm, fga, ftm, fta, threepm):
     stats = {"Points": p,
              "Rebounds": r,
@@ -41,10 +30,8 @@ def addPlayer(name, date, p, r, a, s, b, to, fgm, fga, ftm, fta, threepm):
         playerDict[name][date] = stats
     else:
         playerDict[name] = {date: stats}
-    
 
-
-            
+#calculates fantasy value per game according to ESPN fantasy point system              
 def fantasyPoints(player, game):
     return ((playerDict[player][game]["Points"]) + 
             (playerDict[player][game]["Rebounds"]) + 
@@ -88,7 +75,8 @@ def makePredictList():
     for player in playerDict:
         predictList.append({"Player Name": player, "Predicted Fantasy Value": round(predict(player),2)})
     predictList = sorted(predictList, key=lambda x: x["Predicted Fantasy Value"], reverse=True)
-        
+
+#print dictionary of player info to command line interface        
 def printPlayerDict():
     for player in playerDict:
         print(player, end=":\n")
@@ -98,12 +86,14 @@ def printPlayerDict():
                 #print(stat, playerDict[player][date][stat])
             print("Fantasy Points:", fantasyPoints(player, date))
 
+#print prediction list to command line interface
 def printPredictList():
     for player in predictList:
         name = player["Player Name"]
         value = player["Predicted Fantasy Value"]
         print(f"{name} {value:.2f}")
 
+#utilize nba api to scrape player stats from last n games of nba season
 def getPlayerGameLogs():
     player_game_logs = playergamelogs.PlayerGameLogs(season_nullable="2021-22", last_n_games_nullable=20)
     pgl_df = player_game_logs.get_data_frames()[0]
@@ -114,12 +104,14 @@ def getPlayerGameLogs():
                          "WNBA_FANTASY_PTS", "WNBA_FANTASY_PTS_RANK"], axis=1)
     return pgl_df
 
+#strip stats from pandas dataframe and insert into playerDict
 def stripStats(pgl_df):
     for index in pgl_df.index:
         name = pgl_df["PLAYER_NAME"][index]
         date = pgl_df["GAME_DATE"][index][0:10]
         addPlayer(name, date, pgl_df["PTS"][index], pgl_df["REB"][index], pgl_df["AST"][index], pgl_df["STL"][index], pgl_df["BLK"][index], pgl_df["TOV"][index], pgl_df["FGM"][index], pgl_df["FGA"][index], pgl_df["FTM"][index], pgl_df["FTA"][index], pgl_df["FG3M"][index])
 
+#export sorted list of fantasy projections to csv file
 def exportCSV():
     fields = ["Player Name", "Predicted Fantasy Value"]
             
