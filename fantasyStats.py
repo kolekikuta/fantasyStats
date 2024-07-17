@@ -8,12 +8,12 @@ playerDict = {}
 predictList = []
 
 
-def main():  
+def main():
     stripStats(getPlayerGameLogs())
     makePredictList()
     exportCSV()
 
-#inserts game stats to playerDict   
+#inserts game stats to playerDict
 def addPlayer(name, date, p, r, a, s, b, to, fgm, fga, ftm, fta, threepm):
     stats = {"Points": p,
              "Rebounds": r,
@@ -31,11 +31,11 @@ def addPlayer(name, date, p, r, a, s, b, to, fgm, fga, ftm, fta, threepm):
     else:
         playerDict[name] = {date: stats}
 
-#calculates fantasy value per game according to ESPN fantasy point system              
+#calculates fantasy value per game according to ESPN fantasy point system
 def fantasyPoints(player, game):
-    return ((playerDict[player][game]["Points"]) + 
-            (playerDict[player][game]["Rebounds"]) + 
-            (playerDict[player][game]["Assists"] * 2) + 
+    return ((playerDict[player][game]["Points"]) +
+            (playerDict[player][game]["Rebounds"]) +
+            (playerDict[player][game]["Assists"] * 2) +
             (playerDict[player][game]["Steals"] * 4) +
             (playerDict[player][game]["Blocks"] * 4) +
             (playerDict[player][game]["Turnovers"] * -2) +
@@ -45,8 +45,8 @@ def fantasyPoints(player, game):
             (playerDict[player][game]["FTA"] * -1) +
             (playerDict[player][game]["3PM"])
             )
-    
-#least squares linear regression line    
+
+#least squares linear regression line
 def predict(player):
     n = len(playerDict[player])
     sx = 0
@@ -62,7 +62,7 @@ def predict(player):
         sxy += x * fantasyPoints(player, game)
         sx2 += pow(x,2)
         x += 1
-    
+
     if n==1:
         return sy
     else:
@@ -76,7 +76,7 @@ def makePredictList():
         predictList.append({"Player Name": player, "Predicted Fantasy Value": round(predict(player),2)})
     predictList = sorted(predictList, key=lambda x: x["Predicted Fantasy Value"], reverse=True)
 
-#print dictionary of player info to command line interface        
+#print dictionary of player info to command line interface
 def printPlayerDict():
     for player in playerDict:
         print(player, end=":\n")
@@ -100,7 +100,7 @@ def getPlayerGameLogs():
     pgl_df = pgl_df.drop(["SEASON_YEAR", "TEAM_ID", "TEAM_ABBREVIATION", "TEAM_NAME", "MATCHUP", "WL", "FG_PCT", "FG3_PCT", "FT_PCT", "OREB", "DREB", "BLKA", "PF", "PFD",
                           "DD2", "TD3", "GP_RANK", "W_RANK", "L_RANK", "W_PCT_RANK", "MIN_RANK", "FGM_RANK", "FGA_RANK", "FG_PCT_RANK", "FG3M_RANK", "FG3A_RANK", "FG3_PCT_RANK",
                           "FTM_RANK", "FTA_RANK", "FT_PCT_RANK", "OREB_RANK", "DREB_RANK", "REB_RANK", "AST_RANK", "TOV_RANK", "STL_RANK", "BLK_RANK", "BLKA_RANK", "PF_RANK",
-                         "PFD_RANK", "PTS_RANK", "PLUS_MINUS_RANK", "NBA_FANTASY_PTS_RANK", "DD2_RANK", "TD3_RANK", "VIDEO_AVAILABLE_FLAG", "NICKNAME", "PLUS_MINUS",
+                         "PFD_RANK", "PTS_RANK", "PLUS_MINUS_RANK", "NBA_FANTASY_PTS_RANK", "DD2_RANK", "TD3_RANK", "NICKNAME", "PLUS_MINUS",
                          "WNBA_FANTASY_PTS", "WNBA_FANTASY_PTS_RANK"], axis=1)
     return pgl_df
 
@@ -114,7 +114,7 @@ def stripStats(pgl_df):
 #export sorted list of fantasy projections to csv file
 def exportCSV():
     fields = ["Player Name", "Predicted Fantasy Value"]
-            
+
     with open('list.csv', 'w', newline='') as csvfile:
         fields = ["Player Name", "Predicted Fantasy Value"]
         writer = csv.DictWriter(csvfile, fieldnames=fields)
@@ -122,5 +122,5 @@ def exportCSV():
         writer.writerows(predictList)
     print("Export Successful")
 
-    
+
 main()
