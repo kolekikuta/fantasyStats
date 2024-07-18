@@ -10,7 +10,6 @@ from nba_api.stats.endpoints import playergamelogs
 
 class nbaFantasyModel():
 
-    #pull data from api and split into training and testing features
     def __init__(self):
         #check if current year's season has started
         current_year = int(strftime("%Y"))
@@ -36,15 +35,21 @@ class nbaFantasyModel():
                         "REB_RANK", "AST_RANK", "TOV_RANK", "STL_RANK", "BLK_RANK", "BLKA_RANK", "PF_RANK", "PFD_RANK", "PTS_RANK", "PLUS_MINUS_RANK", "NBA_FANTASY_PTS_RANK",
                         "DD2_RANK", "TD3_RANK", "NICKNAME", "PLUS_MINUS", "WNBA_FANTASY_PTS", "WNBA_FANTASY_PTS_RANK", "AVAILABLE_FLAG"], axis=1)
 
-        #split dataframe into X and Y numpy arrays
+        #split dataframe into X and Y
         self.Y = np.reshape(pgl_df['NBA_FANTASY_PTS'].to_numpy(copy=True), (-1, 1))
-        self.X = pgl_df.loc[:, pgl_df.columns != 'NBA_FANTASY_PTS'].to_numpy(copy=True)
+        self.X = pgl_df.loc[:, pgl_df.columns != 'NBA_FANTASY_PTS']
+
+        print(self.X.columns)
+
+        #one hot encode categorical data
+        one_hot_encoded = pd.get_dummies(self.X, columns=['PLAYER_NAME', 'MATCHUP'])
+        print(one_hot_encoded)
 
         #augment bias column to X
         self.X = np.hstack((np.ones((self.X.shape[0], 1)), self.X))
 
         #random split into training and validation sets
-        indices = np.random.permutation(range(len(self.y)))
+        indices = np.random.permutation(range(len(self.Y)))
         split_ind = floor(0.9 * len(indices))
         train_indices, val_indices = indices[0:split_ind], indices[split_ind:]
         self.train_X, self.val_X = self.X[train_indices], self.X[val_indices]
@@ -55,7 +60,7 @@ class nbaFantasyModel():
         self.k = self.train_X.shape[1]
 
         #initialize weights vector
-        self.w = np.zeros((self.k, 1))
+        self.weights = np.zeros((self.k, 1))
 
     def training(self, alpha_range, lam_range, nepoch, epsilon):
 
@@ -69,18 +74,18 @@ class nbaFantasyModel():
             for lam in np.geomspace(lam_range[0], lam_range[1], num=10):
 
                 #initialize random weights
-                w = np.random.randn(self.k, 1) / 100
+                weights = np.random.randn(self.k, 1) / 100
                 for epoch in range(nepoch):
                     #random permutation of indices to create sample set
                     indices = np.random.permutation(self.n)
                     for i in indices:
-                        xi = self.x_train[i:i+1]
-                        yi = self.y_train[i:i+1]
-                        predict = np.dot(xi, self.w)
-                        w += alpha * np.clip((np.dot(xi.T, yi - predict) - lam * self.w), -1e-2, 1e-2)
+                        xi = self.train_Xn[i:i+1]
+                        yi = self.train_Y[i:i+1]
+                        predict = np.dot(xi, self.weights)
+                        weights += alpha * np.clip((np.dot(xi.T, yi - predict) - lam * self.weights), -1e-2, 1e-2)
 
-                    mse_train = np.mean(np.square(np.dot(self.x_train, w) - self.y_train))
-                    mse_val = np.mean(np.square(np.dot(self.x_val, w) - self.y_val))
+                    mse_train = np.mean(np.square(np.dot(self.train_X, weights) - self.train_Y))
+                    mse_val = np.mean(np.square(np.dot(self.val_X, weights) - self.train_Y))
                     train_losses.append(mse_train)
                     val_losses.append(mse_val)
 
@@ -89,7 +94,7 @@ class nbaFantasyModel():
                         best_mse = mse_train
                         best_alpha = alpha
                         best_lam = lam
-                        self.w = w.copy()
+                        self.weights = weights.copy()
 
                     #premature stop if MSE is less than given bound epsilon
                     if mse_train < epsilon:
@@ -101,18 +106,27 @@ class nbaFantasyModel():
     def testing(self, testX):
         #augment bias column to test set
         testX = np.hstack((np.ones((testX.shape[0], 1)), testX))
-        testY = np.dot(testX, self.w)
+        testY = np.dot(testX, self.weights)
         return testY
 
 model = nbaFantasyModel()
 
-# Compute the time to do grid search on training
-start = time.time()
-alpha, lam, train_losses, val_losses, lowest_mse = model.training([10**-10, 10], [1, 1e10], 300, 1e-5)
-end = time.time()
+#Compute training time
+#start = time.time()
+#alpha, lam, train_losses, val_losses, lowest_mse = model.training([10**-10, 10], [1, 1e10], 300, 1e-5)
+#end = time.time()
 
-testY = model.testing(model.test)
-mse = np.mean(np.square(testY - model.y))
+#testY = model.testing(model.test)
+#mse = np.mean(np.square(testY - model.y))
 
-print(f"Training time: {end-start:.2f} seconds\nBest alpha: {alpha}\nBest lambda: {lam}\nLowest MSE: {lowest_mse}")
-print(f"Testing MSE: {mse}")
+#print(f"Training time: {end-start:.2f} seconds\nBest alpha: {alpha}\nBest lambda: {lam}\nLowest MSE: {lowest_mse}")
+#print(f"Testing MSE: {mse}")
+
+#choose which regression model works best
+#save model as file
+#load model
+#graphs
+#figure out how to provide input
+#use multiple independent variables
+#processing categorial variables - one hot encoding
+#add weight to more recent games
