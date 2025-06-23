@@ -11,29 +11,16 @@ from datetime import datetime
 import joblib
 import pandas as pd
 
-
+### ------------------ Data Retrieval ------------------ ###
 #import data from NBA API
-def getHistoricalData():
-    data_df = pd.DataFrame()
-
-    try:
-        for season in ["2021-22", "2022-23", "2023-24", "2024-25"]:
-            print("Retrieving data for season:", season)
-            player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season)
-            temp_df = player_game_logs.get_data_frames()[0]
-            temp_df = temp_df.drop(["SEASON_YEAR", "TEAM_ID", "TEAM_ABBREVIATION", "TEAM_NAME", "WL", "BLKA", "PF", "PFD",
-                                  "DD2", "TD3", "GP_RANK", "W_RANK", "L_RANK", "W_PCT_RANK", "MIN_RANK", "FGM_RANK", "FGA_RANK", "FG_PCT_RANK", "FG3M_RANK", "FG3A_RANK", "FG3_PCT_RANK",
-                                  "FTM_RANK", "FTA_RANK", "FT_PCT_RANK", "OREB_RANK", "DREB_RANK", "REB_RANK", "AST_RANK", "TOV_RANK", "STL_RANK", "BLK_RANK", "BLKA_RANK", "PF_RANK",
-                                 "PFD_RANK", "PTS_RANK", "PLUS_MINUS_RANK", "NBA_FANTASY_PTS_RANK", "DD2_RANK", "TD3_RANK", "NICKNAME", "PLUS_MINUS",
-                                 "WNBA_FANTASY_PTS", "WNBA_FANTASY_PTS_RANK", "MIN_SEC"], axis=1)
-
-            data_df = pd.concat([data_df, temp_df], ignore_index=True)
-    except Exception as e:
-        print("Error retrieving player game logs:", e)
-        return None
-
-    print("Data retrieved successfully.")
-    return data_df
+def fetch_historical_data():
+    all_data = []
+    seasons = ["2021-22", "2022-23", "2023-24", "2024-25"]
+    for season in seasons:
+        logs = playergamelogs.PlayerGameLogs(season_nullable=season).get_data_frames()[0]
+        logs = clean_data(logs)
+        all_data.append(logs)
+    return pd.concat(all_data, ignore_index=True)
 
 # Get today's data
 def getTodaysData():
@@ -44,15 +31,15 @@ def getTodaysData():
         season_nullable = f"{currYear-1}-{currYear%100:02d}"
     else:
         season_nullable = f"{currYear}-{currYear%100+1:02d}"
-    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=1)
+    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=5)
 
     data_df = player_game_logs.get_data_frames()[0]
-    data_df = data_df.drop(["SEASON_YEAR", "TEAM_ID", "TEAM_ABBREVIATION", "TEAM_NAME", "WL", "BLKA", "PF", "PFD",
-                          "DD2", "TD3", "GP_RANK", "W_RANK", "L_RANK", "W_PCT_RANK", "MIN_RANK", "FGM_RANK", "FGA_RANK", "FG_PCT_RANK", "FG3M_RANK", "FG3A_RANK", "FG3_PCT_RANK",
-                          "FTM_RANK", "FTA_RANK", "FT_PCT_RANK", "OREB_RANK", "DREB_RANK", "REB_RANK", "AST_RANK", "TOV_RANK", "STL_RANK", "BLK_RANK", "BLKA_RANK", "PF_RANK",
-                         "PFD_RANK", "PTS_RANK", "PLUS_MINUS_RANK", "NBA_FANTASY_PTS_RANK", "DD2_RANK", "TD3_RANK", "NICKNAME", "PLUS_MINUS",
-                         "WNBA_FANTASY_PTS", "WNBA_FANTASY_PTS_RANK", "MIN_SEC"], axis=1)
-    return data_df
+    data_df = clean_data(data_df)
+
+    joblib.dump(data_df, 'data_last_five.pkl')
+
+    return preprocess_data(data_df)
+
 
 def loadData():
     print("Loading data...")
@@ -62,7 +49,7 @@ def loadData():
         return data_df
     except:
         print("No data found. Fetching from NBA API...")
-        data_df = getHistoricalData()
+        data_df = fetch_historical_data()
         if data_df is not None:
             data_df.to_pickle('data.pkl')
             return data_df
@@ -70,46 +57,54 @@ def loadData():
             print("Failed to retrieve data.")
             return None
 
+
+def clean_data(df):
+    drop_cols = [
+        "SEASON_YEAR", "TEAM_ID", "TEAM_ABBREVIATION", "TEAM_NAME", "WL", "BLKA", "PF", "PFD", "DD2", "TD3",
+        "GP_RANK", "W_RANK", "L_RANK", "W_PCT_RANK", "MIN_RANK", "FGM_RANK", "FGA_RANK", "FG_PCT_RANK",
+        "FG3M_RANK", "FG3A_RANK", "FG3_PCT_RANK", "FTM_RANK", "FTA_RANK", "FT_PCT_RANK", "OREB_RANK",
+        "DREB_RANK", "REB_RANK", "AST_RANK", "TOV_RANK", "STL_RANK", "BLK_RANK", "BLKA_RANK", "PF_RANK",
+        "PFD_RANK", "PTS_RANK", "PLUS_MINUS_RANK", "NBA_FANTASY_PTS_RANK", "DD2_RANK", "TD3_RANK",
+        "NICKNAME", "PLUS_MINUS", "WNBA_FANTASY_PTS", "WNBA_FANTASY_PTS_RANK", "MIN_SEC"
+    ]
+    return df.drop(columns=drop_cols)
+
+### ------------------ Data Preprocessing ------------------ ###
 def preprocess_data(data_df):
     print("Pre-processing data...")
-    features_df = pd.DataFrame()
 
-    #split matchup column into home and away teams and one hot encode
-    features_df[["TEAM", "OPPONENT", "HOME"]] = data_df["MATCHUP"].apply(split_matchup)
-
-    team_encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-    encoded = team_encoder.fit_transform(features_df[["TEAM"]])
-    encoded_df = pd.DataFrame(encoded, columns=team_encoder.get_feature_names_out(["TEAM"]), index=data_df.index)
-    features_df = pd.concat([features_df, encoded_df], axis=1)
-    features_df.drop(columns=["TEAM"], inplace=True)
-
-    opponent_encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-    encoded = opponent_encoder.fit_transform(features_df[["OPPONENT"]])
-    encoded_df = pd.DataFrame(encoded, columns=opponent_encoder.get_feature_names_out(["OPPONENT"]), index=data_df.index)
-    features_df = pd.concat([features_df, encoded_df], axis=1)
-    features_df.drop(columns=["OPPONENT"], inplace=True)
-
-    #convert datetime to timestamp
+    # Apply matchup split just once to data_df
+    data_df[["TEAM", "OPPONENT", "HOME"]] = data_df["MATCHUP"].apply(split_matchup)
     data_df["GAME_DATE"] = pd.to_datetime(data_df["GAME_DATE"])
-    features_df['TIMESTAMP'] = data_df['GAME_DATE'].values.astype('int64') / 10**9   # Convert to seconds since epoch
 
-    #create features
-    features_df["AVG_PPG_PAST_5"] = data_df.groupby("PLAYER_NAME")["PTS"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_APG_PAST_5"] = data_df.groupby("PLAYER_NAME")["AST"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_RPG_PAST_5"] = data_df.groupby("PLAYER_NAME")["REB"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_FG_PCT_PAST_5"] = data_df.groupby("PLAYER_NAME")["FG_PCT"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_FT_PCT_PAST_5"] = data_df.groupby("PLAYER_NAME")["FT_PCT"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_3PM_PAST_5"] = data_df.groupby("PLAYER_NAME")["FG3M"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_STL_PAST_5"] = data_df.groupby("PLAYER_NAME")["STL"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_BLK_PAST_5"] = data_df.groupby("PLAYER_NAME")["BLK"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df["AVG_TOV_PAST_5"] = data_df.groupby("PLAYER_NAME")["TOV"].transform(lambda x: x.rolling(window=5, min_periods=1).mean())
-    features_df = pd.concat([features_df, data_df["NBA_FANTASY_PTS"]], axis=1)
+    features_df = pd.DataFrame(index=data_df.index)
+    features_df['TIMESTAMP'] = data_df['GAME_DATE'].astype('int64') / 1e9  # UNIX time
 
+    # Rolling average stats per player
+    for stat in ["PTS", "AST", "REB", "FG_PCT", "FT_PCT", "FG3M", "STL", "BLK", "TOV"]:
+        features_df[f"AVG_{stat}_PAST_5"] = data_df.groupby("PLAYER_NAME")[stat].transform(lambda x: x.rolling(5, min_periods=1).mean())
+
+    # One-hot encode TEAM and OPPONENT columns
+    features_df = pd.concat([
+        features_df,
+        one_hot_encode(data_df, "TEAM"),
+        one_hot_encode(data_df, "OPPONENT")
+    ], axis=1)
+
+    # Add target + identifier
+    #eatures_df["NBA_FANTASY_PTS"] = data_df["NBA_FANTASY_PTS"]
     features_df["PLAYER_NAME"] = data_df["PLAYER_NAME"]
 
+    features_df.to_pickle('features.pkl')
     print("Data pre-processed successfully.")
-
     return features_df
+
+
+def one_hot_encode(df, col):
+    enc = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
+    transformed = enc.fit_transform(df[[col]])
+    return pd.DataFrame(transformed, columns=enc.get_feature_names_out([col]), index=df.index)
+
 
 #utility function
 def split_matchup(row):
@@ -122,6 +117,8 @@ def split_matchup(row):
     else:
         return pd.Series([None, None, None])
 
+
+### ------------------ Model Training & Prediction ------------------ ###
 def trainModel(data_df):
     print("Training model...")
     X = data_df.drop(columns=["NBA_FANTASY_PTS", "PLAYER_NAME"])
@@ -225,11 +222,17 @@ def buildFeatureSet(data_df, processed_df, games_per_player=1):
 
 
 
-data_df = loadData()
-processed_df = preprocess_data(data_df)
-x = buildFeatureSet(data_df, processed_df)
+
+
+#data_df = loadData()
+#processed_df = preprocess_data(data_df)
+#x = buildFeatureSet(data_df, processed_df)
+#X = processed_df.drop(columns=["NBA_FANTASY_PTS", "PLAYER_NAME"])
+#y = processed_df["NBA_FANTASY_PTS"]
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+#model = loadModel()
 #model, X_test, y_test = trainModel(processed_df)
 #test(model, X_test, y_test)
-predictions = predict(x)
+#predictions = predict(x)
 
 #getUpcomingMatchups()

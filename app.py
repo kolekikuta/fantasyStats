@@ -1,130 +1,76 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import firebase_admin
-from firebase_admin import credentials, firestore, auth
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-import atexit
 import fantasy
 import pandas as pd
-
-#Initialize Firestore DB
-cred = credentials.Certificate('nbafantasy-d9051-firebase-adminsdk-fbsvc-474ddbefc0.json')
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-
+import joblib
 
 app = Flask(__name__)
 CORS(app)
 
-# Function to update predictions at midnight
-def update_predictions():
-    #load model from firebase storage
-    model = fantasy.loadModel()
-    if model is None:
-        print("Model not found. Cannot update predictions.")
-        return
-    #load datasets
-    
-    #build feature set
 
-    #run predictions
 
-    #update in firestore
-    print("Updating predictions...")
-
-scheduler = BackgroundScheduler()
-#update at midnight
-scheduler.add_job(func=update_predictions, trigger="cron", hour=0, minute=0)
-scheduler.start()
-
-atexit.register(lambda: scheduler.shutdown())
 
 
 
 @app.route('/')
 def index():
-    return "Welcome to the Fantasy Basketball Prediction API!"
+    return render_template("index.html")
 
-#Signup endpoint to create new users
-@app.route('/signup', methods=['POST'])
-def signUp():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-    name = data.get('name')
+@app.route('/player')
+def player_page():
+    player_name = request.args.get("name")
+    if not player_name:
+        return "Player name not provided", 400
 
-    if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+    data = joblib.load('data_last_five.pkl')
+    df = pd.DataFrame(data)
 
-    try:
-        #Create user in firebase auth
-        user = auth.create_user(email=email, password=password)
+    df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"])
+    df = df[df["PLAYER_NAME"] == player_name].sort_values("GAME_DATE", ascending=False)
 
-        #Add user to Firestore
-        db.collection('users').document(user.uid).set({
-            'email': email,
-            'name': name,
-            "createdAt": firestore.SERVER_TIMESTAMP
+    prediction_df = pd.read_json('predictions.json', lines=True)
+
+    fantasy_row = prediction_df[prediction_df["PLAYER_NAME"] == player_name]
+    fantasy_value = fantasy_row["PREDICTED_FANTASY_PTS"].values[0] if not fantasy_row.empty else None
+
+    if df.empty:
+        return f"No data found for player: {player_name}", 404
+
+    return render_template("player.html",
+                           player_name=player_name,
+                           games=df.to_dict(orient="records"),
+                           fantasy_value=fantasy_value)
+
+@app.route('/api/predictions')
+def predictions():
+    #if needs to be updated
+    data = fantasy.getTodaysData()
+    predictions_df = fantasy.predict(data)
+
+    #else load json
+    return jsonify(predictions_df.to_dict(orient="records"))
+
+@app.route('/api/data')
+def data():
+    data = joblib.load('data_last_five.pkl')
+    # Sort by player name and game date
+    data["GAME_DATE"] = pd.to_datetime(data["GAME_DATE"])
+    data.sort_values(["PLAYER_NAME", "GAME_DATE"], inplace=True)
+
+    # Group by player
+    grouped = data.groupby("PLAYER_NAME")
+
+    result = []
+    for player, group in grouped:
+        result.append({
+            "player": player,
+            "games": group.to_dict(orient="records")
         })
-        return jsonify({"message": "User created", "uid": user.uid})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
 
-# Login endpoint to authenticate users
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-
-    if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
-
-    try:
-        user = auth.get_user_by_email(email)
-        # Note: Password verification is done on the client side with Firebase SDK
-        return jsonify({"message": "Login successful", "uid": user.uid})
-    except auth.AuthError as e:
-        return jsonify({"error": str(e)}), 400
-
-#Get Predictd Fantasy Points for all players from db
-@app.route('/table', methods=['GET'])
-def get_table():
-    try:
-        players_ref = db.collection('players')
-        players = players_ref.stream()
-        player_list = []
-        for player in players:
-            player_data = player.to_dict()
-            player_data['id'] = player.id
-            player_list.append(player_data)
-            player_list.sort(key=lambda x: x.get('PREDICTED_FANTASY_PTS', 0), reverse=True)
-        return jsonify(player_list), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Endpoint to update players' fantasy values in db
-@app.route('/update', methods=['POST'])
-def update_players():
-    try:
-        data = request.get_json()
-        players_ref = db.collection('players')
-
-        for player in data:
-            player_id = player.get('id')
-            new_value = player.get('fantasy_value')
-
-            if player_id is not None and new_value is not None:
-                players_ref.document(player_id).set({
-                    "fantasy_value": new_value
-                }, merge=True)
+    return jsonify(result)
 
 
-        return jsonify({"message": "Players updated successfully"}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 

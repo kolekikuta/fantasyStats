@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ player_name }} - NBA Stats</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>{{ player_name }} - Game Log</h1>
+  <h2>Predicted Fantasy Value - {{ fantasy_value }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Matchup</th>
+        <th>MIN</th>
+        <th>PTS</th>
+        <th>REB</th>
+        <th>AST</th>
+        <th>STL</th>
+        <th>BLK</th>
+        <th>Fantasy PTS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for game in games %}
+      <tr>
+        <td>{{ game.GAME_DATE.strftime('%Y-%m-%d') }}</td>
+        <td>{{ game.MATCHUP }}</td>
+        <td>{{ "%.1f"|format(game.MIN) }}</td>
+        <td>{{ game.PTS }}</td>
+        <td>{{ game.REB }}</td>
+        <td>{{ game.AST }}</td>
+        <td>{{ game.STL }}</td>
+        <td>{{ game.BLK }}</td>
+        <td>{{ "%.1f"|format(game.NBA_FANTASY_PTS) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
