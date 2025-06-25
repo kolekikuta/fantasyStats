@@ -32,7 +32,8 @@ def player_page():
     prediction_df = pd.read_json('predictions.json', lines=True)
 
     fantasy_row = prediction_df[prediction_df["PLAYER_NAME"] == player_name]
-    fantasy_value = fantasy_row["PREDICTED_FANTASY_PTS"].values[0] if not fantasy_row.empty else None
+    fantasy_value = fantasy_row["NEXT_GAME_PTS"].values[0] if not fantasy_row.empty else None
+    fantasy_value_week = fantasy_row["WEEKLY_SUM"].values[0] if not fantasy_row.empty else None
 
     if df.empty:
         return f"No data found for player: {player_name}", 404
@@ -40,15 +41,15 @@ def player_page():
     return render_template("player.html",
                            player_name=player_name,
                            games=df.to_dict(orient="records"),
-                           fantasy_value=fantasy_value)
+                           fantasy_value=fantasy_value,
+                           fantasy_value_week=fantasy_value_week)
 
 @app.route('/api/predictions')
 def predictions():
-    #if needs to be updated
-    data = fantasy.getTodaysData()
-    predictions_df = fantasy.predict(data)
 
-    #else load json
+    features = fantasy.buildFeatureSet()
+    predictions_df = fantasy.predict(features)
+
     return jsonify(predictions_df.to_dict(orient="records"))
 
 @app.route('/api/data')
