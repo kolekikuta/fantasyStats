@@ -3,17 +3,37 @@
 <head>
   <title>{{ player_name }} - NBA Stats</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    h1 { margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-    th { background-color: #f4f4f4; }
+    body {
+      font-family: Arial;
+      padding: 2rem 4rem 2rem 4rem;
+      background-color: #f7f7f7;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background-color: #333;
+      color: white;
+    }
   </style>
 </head>
 <body>
-  <h1>{{ player_name }} - Game Log</h1>
-  <h2>Predicted Fantasy Value - {{ fantasy_value }}</h2>
-  <h2>Predicted Weekly Sum - {{ fantasy_value_week }}</h2>
+
+  <h1>{{ player_name }}</h1>
+  <h2>Predicted Fantasy Value: {{ fantasy_value }}</h2>
+  <h2>Predicted Weekly Sum: {{ fantasy_value_week }}</h2>
   <table>
     <thead>
       <tr>

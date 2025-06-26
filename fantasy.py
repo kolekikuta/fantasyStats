@@ -4,8 +4,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime, timedelta
-import requests
-
+import json
+import os
 
 
 import joblib
@@ -22,8 +22,10 @@ def fetch_historical_data():
         all_data.append(logs)
     return pd.concat(all_data, ignore_index=True)
 
-# Get today's data
-def getTodaysData():
+# Get game logs for last five games
+def getLastFive():
+
+    print("Fetching player game logs for last 5 games...")
     currYear = datetime.now().year
     currMonth = datetime.now().month
 
@@ -31,14 +33,32 @@ def getTodaysData():
         season_nullable = f"{currYear-1}-{currYear%100:02d}"
     else:
         season_nullable = f"{currYear}-{currYear%100+1:02d}"
-    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=5)
+    season_type_nullable = "Playoffs"
+
+    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=10, season_type_nullable=season_type_nullable)
 
     data_df = player_game_logs.get_data_frames()[0]
     data_df = clean_data(data_df)
 
-    joblib.dump(data_df, 'data_last_five.pkl')
+    data_df["GAME_DATE"] = pd.to_datetime(data_df["GAME_DATE"])
+    data_df = data_df.sort_values(by=["PLAYER_ID", "GAME_DATE"], ascending=[True, False])
+    data_df = data_df.groupby("PLAYER_ID").head(5).reset_index(drop=True)
 
-    return preprocess_data(data_df)
+    data_df["GAME_DATE"] = pd.to_datetime(data_df["GAME_DATE"]).dt.strftime("%Y-%m-%d")
+
+    output = {
+        "metadata": {
+            "generate_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "data": data_df.to_dict(orient='records')
+    }
+
+    with open("data_last_five_temp.json", "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+    os.replace("data_last_five_temp.json", "data_last_five.json")
+
+    print("Player game logs fetched successfully.")
+    return data_df
 
 
 def getUpcomingMatchups():
@@ -47,11 +67,7 @@ def getUpcomingMatchups():
     players_df = players_df[["PERSON_ID", "DISPLAY_FIRST_LAST", "TEAM_ID", "TEAM_NAME"]]
 
     matchup_records = []
-
     today = datetime.now()
-    monday = today - timedelta(days=today.weekday())
-
-    teams_df = pd.read_json('teams.json', orient='records')
 
     schedule = scheduleleaguev2.ScheduleLeagueV2()
     games_df = schedule.season_games.get_data_frame()
@@ -368,18 +384,18 @@ def predict(X_test):
 
     # 3. Merge them together
     summary = pd.merge(weekly_sum, next_game, on="PLAYER_NAME")
-
-    # Optionally, join back the full schedule if you need the date:
-    # summary = summary.merge(
-    #     results_by_date[["PLAYER_NAME","GAME_DATE"]].drop_duplicates("PLAYER_NAME"),
-    #     on="PLAYER_NAME"
-    # )
-
-    # Sort by weekly sum descending
     summary = summary.sort_values("WEEKLY_SUM", ascending=False).reset_index(drop=True)
 
-    # Persist or return
-    summary.to_json('predictions.json', orient='records', force_ascii=False, lines=True)
+    output = {
+        "metadata": {
+            "generate_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "data": summary.to_dict(orient='records')
+    }
+
+    with open('predictions.json', 'w', encoding='utf-8') as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
     print("Predictions made successfully.")
     return summary
 

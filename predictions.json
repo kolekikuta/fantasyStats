@@ -1,35 +1,182 @@
-{"PLAYER_NAME":"Shai Gilgeous-Alexander","WEEKLY_SUM":102.0,"NEXT_GAME_PTS":51.0}
-{"PLAYER_NAME":"Jalen Williams","WEEKLY_SUM":80.0,"NEXT_GAME_PTS":40.0}
-{"PLAYER_NAME":"Tyrese Haliburton","WEEKLY_SUM":74.0,"NEXT_GAME_PTS":37.0}
-{"PLAYER_NAME":"Myles Turner","WEEKLY_SUM":64.0,"NEXT_GAME_PTS":32.0}
-{"PLAYER_NAME":"Isaiah Hartenstein","WEEKLY_SUM":62.0,"NEXT_GAME_PTS":31.0}
-{"PLAYER_NAME":"Pascal Siakam","WEEKLY_SUM":62.0,"NEXT_GAME_PTS":31.0}
-{"PLAYER_NAME":"Aaron Nesmith","WEEKLY_SUM":60.0,"NEXT_GAME_PTS":30.0}
-{"PLAYER_NAME":"Chet Holmgren","WEEKLY_SUM":56.0,"NEXT_GAME_PTS":28.0}
-{"PLAYER_NAME":"Bennedict Mathurin","WEEKLY_SUM":56.0,"NEXT_GAME_PTS":28.0}
-{"PLAYER_NAME":"Aaron Wiggins","WEEKLY_SUM":54.0,"NEXT_GAME_PTS":27.0}
-{"PLAYER_NAME":"Isaiah Joe","WEEKLY_SUM":52.0,"NEXT_GAME_PTS":26.0}
-{"PLAYER_NAME":"Luguentz Dort","WEEKLY_SUM":52.0,"NEXT_GAME_PTS":26.0}
-{"PLAYER_NAME":"Thomas Bryant","WEEKLY_SUM":50.0,"NEXT_GAME_PTS":25.0}
-{"PLAYER_NAME":"Andrew Nembhard","WEEKLY_SUM":50.0,"NEXT_GAME_PTS":25.0}
-{"PLAYER_NAME":"Obi Toppin","WEEKLY_SUM":48.0,"NEXT_GAME_PTS":24.0}
-{"PLAYER_NAME":"Alex Caruso","WEEKLY_SUM":48.0,"NEXT_GAME_PTS":24.0}
-{"PLAYER_NAME":"Quenton Jackson","WEEKLY_SUM":48.0,"NEXT_GAME_PTS":24.0}
-{"PLAYER_NAME":"Cason Wallace","WEEKLY_SUM":46.0,"NEXT_GAME_PTS":23.0}
-{"PLAYER_NAME":"T.J. McConnell","WEEKLY_SUM":46.0,"NEXT_GAME_PTS":23.0}
-{"PLAYER_NAME":"Tony Bradley","WEEKLY_SUM":46.0,"NEXT_GAME_PTS":23.0}
-{"PLAYER_NAME":"Kenrich Williams","WEEKLY_SUM":44.0,"NEXT_GAME_PTS":22.0}
-{"PLAYER_NAME":"Jarace Walker","WEEKLY_SUM":44.0,"NEXT_GAME_PTS":22.0}
-{"PLAYER_NAME":"Jaylin Williams","WEEKLY_SUM":44.0,"NEXT_GAME_PTS":22.0}
-{"PLAYER_NAME":"Ben Sheppard","WEEKLY_SUM":42.0,"NEXT_GAME_PTS":21.0}
-{"PLAYER_NAME":"Ousmane Dieng","WEEKLY_SUM":40.0,"NEXT_GAME_PTS":20.0}
-{"PLAYER_NAME":"James Johnson","WEEKLY_SUM":38.0,"NEXT_GAME_PTS":19.0}
-{"PLAYER_NAME":"Isaiah Jackson","WEEKLY_SUM":38.0,"NEXT_GAME_PTS":19.0}
-{"PLAYER_NAME":"Johnny Furphy","WEEKLY_SUM":36.0,"NEXT_GAME_PTS":18.0}
-{"PLAYER_NAME":"Adam Flagler","WEEKLY_SUM":36.0,"NEXT_GAME_PTS":18.0}
-{"PLAYER_NAME":"Ajay Mitchell","WEEKLY_SUM":36.0,"NEXT_GAME_PTS":18.0}
-{"PLAYER_NAME":"Enrique Freeman","WEEKLY_SUM":34.0,"NEXT_GAME_PTS":17.0}
-{"PLAYER_NAME":"Branden Carlson","WEEKLY_SUM":34.0,"NEXT_GAME_PTS":17.0}
-{"PLAYER_NAME":"Alex Ducas","WEEKLY_SUM":28.0,"NEXT_GAME_PTS":14.0}
-{"PLAYER_NAME":"Dillon Jones","WEEKLY_SUM":26.0,"NEXT_GAME_PTS":13.0}
-{"PLAYER_NAME":"RayJ Dennis","WEEKLY_SUM":24.0,"NEXT_GAME_PTS":12.0}
+{
+  "metadata": {
+    "generate_date": "2025-06-26 10:30:42"
+  },
+  "data": [
+    {
+      "PLAYER_NAME": "Shai Gilgeous-Alexander",
+      "WEEKLY_SUM": 102.0,
+      "NEXT_GAME_PTS": 51.0
+    },
+    {
+      "PLAYER_NAME": "Jalen Williams",
+      "WEEKLY_SUM": 80.0,
+      "NEXT_GAME_PTS": 40.0
+    },
+    {
+      "PLAYER_NAME": "Tyrese Haliburton",
+      "WEEKLY_SUM": 74.0,
+      "NEXT_GAME_PTS": 37.0
+    },
+    {
+      "PLAYER_NAME": "Myles Turner",
+      "WEEKLY_SUM": 64.0,
+      "NEXT_GAME_PTS": 32.0
+    },
+    {
+      "PLAYER_NAME": "Isaiah Hartenstein",
+      "WEEKLY_SUM": 62.0,
+      "NEXT_GAME_PTS": 31.0
+    },
+    {
+      "PLAYER_NAME": "Pascal Siakam",
+      "WEEKLY_SUM": 62.0,
+      "NEXT_GAME_PTS": 31.0
+    },
+    {
+      "PLAYER_NAME": "Aaron Nesmith",
+      "WEEKLY_SUM": 60.0,
+      "NEXT_GAME_PTS": 30.0
+    },
+    {
+      "PLAYER_NAME": "Chet Holmgren",
+      "WEEKLY_SUM": 56.0,
+      "NEXT_GAME_PTS": 28.0
+    },
+    {
+      "PLAYER_NAME": "Bennedict Mathurin",
+      "WEEKLY_SUM": 56.0,
+      "NEXT_GAME_PTS": 28.0
+    },
+    {
+      "PLAYER_NAME": "Aaron Wiggins",
+      "WEEKLY_SUM": 54.0,
+      "NEXT_GAME_PTS": 27.0
+    },
+    {
+      "PLAYER_NAME": "Isaiah Joe",
+      "WEEKLY_SUM": 52.0,
+      "NEXT_GAME_PTS": 26.0
+    },
+    {
+      "PLAYER_NAME": "Luguentz Dort",
+      "WEEKLY_SUM": 52.0,
+      "NEXT_GAME_PTS": 26.0
+    },
+    {
+      "PLAYER_NAME": "Thomas Bryant",
+      "WEEKLY_SUM": 50.0,
+      "NEXT_GAME_PTS": 25.0
+    },
+    {
+      "PLAYER_NAME": "Andrew Nembhard",
+      "WEEKLY_SUM": 50.0,
+      "NEXT_GAME_PTS": 25.0
+    },
+    {
+      "PLAYER_NAME": "Obi Toppin",
+      "WEEKLY_SUM": 48.0,
+      "NEXT_GAME_PTS": 24.0
+    },
+    {
+      "PLAYER_NAME": "Alex Caruso",
+      "WEEKLY_SUM": 48.0,
+      "NEXT_GAME_PTS": 24.0
+    },
+    {
+      "PLAYER_NAME": "Quenton Jackson",
+      "WEEKLY_SUM": 48.0,
+      "NEXT_GAME_PTS": 24.0
+    },
+    {
+      "PLAYER_NAME": "Cason Wallace",
+      "WEEKLY_SUM": 46.0,
+      "NEXT_GAME_PTS": 23.0
+    },
+    {
+      "PLAYER_NAME": "T.J. McConnell",
+      "WEEKLY_SUM": 46.0,
+      "NEXT_GAME_PTS": 23.0
+    },
+    {
+      "PLAYER_NAME": "Tony Bradley",
+      "WEEKLY_SUM": 46.0,
+      "NEXT_GAME_PTS": 23.0
+    },
+    {
+      "PLAYER_NAME": "Kenrich Williams",
+      "WEEKLY_SUM": 44.0,
+      "NEXT_GAME_PTS": 22.0
+    },
+    {
+      "PLAYER_NAME": "Jarace Walker",
+      "WEEKLY_SUM": 44.0,
+      "NEXT_GAME_PTS": 22.0
+    },
+    {
+      "PLAYER_NAME": "Jaylin Williams",
+      "WEEKLY_SUM": 44.0,
+      "NEXT_GAME_PTS": 22.0
+    },
+    {
+      "PLAYER_NAME": "Ben Sheppard",
+      "WEEKLY_SUM": 42.0,
+      "NEXT_GAME_PTS": 21.0
+    },
+    {
+      "PLAYER_NAME": "Ousmane Dieng",
+      "WEEKLY_SUM": 40.0,
+      "NEXT_GAME_PTS": 20.0
+    },
+    {
+      "PLAYER_NAME": "James Johnson",
+      "WEEKLY_SUM": 38.0,
+      "NEXT_GAME_PTS": 19.0
+    },
+    {
+      "PLAYER_NAME": "Isaiah Jackson",
+      "WEEKLY_SUM": 38.0,
+      "NEXT_GAME_PTS": 19.0
+    },
+    {
+      "PLAYER_NAME": "Johnny Furphy",
+      "WEEKLY_SUM": 36.0,
+      "NEXT_GAME_PTS": 18.0
+    },
+    {
+      "PLAYER_NAME": "Adam Flagler",
+      "WEEKLY_SUM": 36.0,
+      "NEXT_GAME_PTS": 18.0
+    },
+    {
+      "PLAYER_NAME": "Ajay Mitchell",
+      "WEEKLY_SUM": 36.0,
+      "NEXT_GAME_PTS": 18.0
+    },
+    {
+      "PLAYER_NAME": "Enrique Freeman",
+      "WEEKLY_SUM": 34.0,
+      "NEXT_GAME_PTS": 17.0
+    },
+    {
+      "PLAYER_NAME": "Branden Carlson",
+      "WEEKLY_SUM": 34.0,
+      "NEXT_GAME_PTS": 17.0
+    },
+    {
+      "PLAYER_NAME": "Alex Ducas",
+      "WEEKLY_SUM": 28.0,
+      "NEXT_GAME_PTS": 14.0
+    },
+    {
+      "PLAYER_NAME": "Dillon Jones",
+      "WEEKLY_SUM": 26.0,
+      "NEXT_GAME_PTS": 13.0
+    },
+    {
+      "PLAYER_NAME": "RayJ Dennis",
+      "WEEKLY_SUM": 24.0,
+      "NEXT_GAME_PTS": 12.0
+    }
+  ]
+}
