@@ -83,7 +83,16 @@ def getLastFive(player_name):
         season_nullable = f"{currYear-1}-{currYear%100:02d}"
     else:
         season_nullable = f"{currYear}-{currYear%100+1:02d}"
-    season_type_nullable = "Playoffs"
+
+    if currMonth in [1, 2, 3, 10, 11, 12]:
+        season_type_nullable = "Regular Season"
+    elif currMonth == 4:
+        if datetime.now().day < 15:
+            season_type_nullable = "Regular Season"
+        else:
+            season_type_nullable = "Playoffs"
+    else:
+        season_type_nullable = "Playoffs"
 
     with SessionLocal() as db:
         player = db.query(NBAPlayers).filter(NBAPlayers.name == player_name).first()

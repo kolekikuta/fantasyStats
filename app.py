@@ -36,18 +36,25 @@ def player_page():
     if dataLastFive_df.empty:
         return f"No game logs found for player: {player_name}", 404
 
-    # Get fantasy prediction values from JSON cache
-    try:
-        with open("predictions.json", "r", encoding="utf-8") as f:
-            content = json.load(f)
-        prediction_df = pd.DataFrame(content["data"])
-    except Exception as e:
-        print(f"Error loading predictions.json: {e}")
-        prediction_df = pd.DataFrame()
+    # Get fantasy prediction values from the database
+    fantasy_value = None
+    fantasy_value_week = None
 
-    fantasy_row = prediction_df[prediction_df["PLAYER_NAME"] == player_name]
-    fantasy_value = fantasy_row["NEXT_GAME_PTS"].values[0] if not fantasy_row.empty else None
-    fantasy_value_week = fantasy_row["WEEKLY_SUM"].values[0] if not fantasy_row.empty else None
+    try:
+        with SessionLocal() as db:
+            prediction = (
+                db.query(PlayerPrediction)
+                .filter(PlayerPrediction.player_name == player_name)
+                .order_by(PlayerPrediction.generate_date.desc())  # in case of duplicates
+                .first()
+            )
+
+            if prediction:
+                fantasy_value = round(prediction.next_game_pts, 1)
+                fantasy_value_week = round(prediction.weekly_sum, 1)
+
+    except Exception as e:
+        print(f"Error loading prediction from database: {e}")
 
     return render_template(
         "player.html",
@@ -63,7 +70,7 @@ def predictions():
     try:
         with SessionLocal() as db:
             # Check the most recent prediction time
-            latest_prediction = db.query(func.max(PlayerPrediction.generate_date)).scalar()
+            latest_prediction = db.query(func.max(PlayerPrediction.generate_date)).scalar().replace(tzinfo=timezone.utc)
 
             if not latest_prediction or datetime.now(timezone.utc) - latest_prediction > timedelta(days=1):
                 print("Predictions are older than 24 hours. Recomputing...")
@@ -86,26 +93,6 @@ def predictions():
     except Exception as e:
         print("Error fetching/generating predictions:", e)
         return jsonify({"error": "Failed to load predictions"}), 500
-
-@app.route('/api/data')
-def data():
-    data = joblib.load('data_last_five.pkl')
-    # Sort by player name and game date
-    data["GAME_DATE"] = pd.to_datetime(data["GAME_DATE"])
-    data.sort_values(["PLAYER_NAME", "GAME_DATE"], inplace=True)
-
-    # Group by player
-    grouped = data.groupby("PLAYER_NAME")
-
-    result = []
-    for player, group in grouped:
-        result.append({
-            "player": player,
-            "games": group.to_dict(orient="records")
-        })
-
-    return jsonify(result)
-
 
 
 
