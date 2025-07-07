@@ -10,11 +10,11 @@
 - 🧠 **ML Model Pipeline**
   - Feature engineering from recent player performance
   - Categorical encoding and scaling
-  - Trained regression model (e.g., XGBoost or similar)
+  - Trained regression model (Random Forrest Regressor)
 
 - 📊 **Last 5 Game Logs per Player**
   - Automatically fetches from NBA API if data is outdated or missing
-  - Stored in a SQL database for fast access and caching
+  - Stored in a SQLite database for fast access and caching
 
 - 🌐 **Web Interface**
   - Search any NBA player and view their:
@@ -36,6 +36,5 @@
 - **Backend**: Flask, SQLAlchemy
 - **Frontend**: Jinja2 templates, HTML/CSS
 - **Data**: NBA API via `nba_api`
-- **ML**: scikit-learn, pandas, joblib
+- **ML**: scikit-learn, pandas
 - **Storage**: SQLite (or Postgres-compatible)
-
