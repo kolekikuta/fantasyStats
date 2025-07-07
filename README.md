@@ -1,16 +1,43 @@
-# Notes
-## Categorical Variables
-- One hot encode - change all categorical data into numerical by assigning a number value
-- process date, min into numerical data
-- converted to numerical data for year, month, and day
-- convert min-sec column to numerical
-- come back to matchup
+# 🏀 fantasyStats
 
+**fantasyStats** is a full-stack Flask web application that provides NBA player analytics and fantasy point predictions based on recent performance. The app scrapes game logs, builds a machine learning model, and offers dynamic insights into a player's fantasy value.
 
-## Tech Stack
-- Frontend - HTML/CSS Templates
-- Backend - Flask app
-    - hosted on Render
-- ML Model - stored as .pkl file in AWS S3 bucket
-- Database - SQLite
-    - hosted with Flask backend on Render
+## 🚀 Features
+
+- 📈 **Fantasy Point Predictions**
+  Predicts player fantasy points using a trained machine learning model based on the last 5 games.
+
+- 🧠 **ML Model Pipeline**
+  - Feature engineering from recent player performance
+  - Categorical encoding and scaling
+  - Trained regression model (e.g., XGBoost or similar)
+
+- 📊 **Last 5 Game Logs per Player**
+  - Automatically fetches from NBA API if data is outdated or missing
+  - Stored in a SQL database for fast access and caching
+
+- 🌐 **Web Interface**
+  - Search any NBA player and view their:
+    - Last 5 games
+    - Predicted fantasy points for the next game
+    - Total predicted fantasy points for the week
+
+- 🗃️ **Database-Backed Storage**
+  - SQLAlchemy models for players, game logs, and predictions
+  - Automatically updates and checks data freshness
+
+- ⚙️ **REST API Endpoints**
+  - `/api/predictions`: Get all player predictions
+  - `/api/data`: Grouped last-five game logs (for development use)
+  - `/player?name=Player Name`: Render a player-specific page
+
+## 🛠️ Tech Stack
+
+- **Backend**: Flask, SQLAlchemy
+- **Frontend**: Jinja2 templates, HTML/CSS
+- **Data**: NBA API via `nba_api`
+- **ML**: scikit-learn, pandas, joblib
+- **Storage**: SQLite (or Postgres-compatible)
+
+## 📂 Folder Structure
+
