@@ -24,42 +24,37 @@ def player_page():
     if not player_name:
         return "Player name not provided", 400
 
-
     try:
-        with open("data_last_five.json", "r", encoding="utf-8") as f:
-            content = json.load(f)
-
-        fetch_date_str = content.get("metadata", {}).get("generate_date", None)
-        fetch_date = datetime.strptime(fetch_date_str, "%Y-%m-%d %H:%M:%S") if fetch_date_str else None
-        if datetime.now() - fetch_date > pd.Timedelta(days=1):
-            print("Game logs older than 24 hours. Fetching...")
-            dataLastFive_df = fantasy.getLastFive()
-        else:
-            print("Using cached game logs.")
-            dataLastFive_df = pd.DataFrame(content["data"])
+        # Fetch last five games using the updated function
+        dataLastFive_df = fantasy.getLastFive(player_name)
     except Exception as e:
-        print("No valid data found. Fetching new.", e)
-        dataLastFive_df = fantasy.getLastFive()
+        print(f"Error fetching last five games: {e}")
+        return f"Error fetching game logs for {player_name}", 500
 
-    dataLastFive_df["GAME_DATE"] = pd.to_datetime(dataLastFive_df["GAME_DATE"])
-    dataLastFive_df = dataLastFive_df[dataLastFive_df["PLAYER_NAME"] == player_name].sort_values("GAME_DATE", ascending=False)
+    if dataLastFive_df.empty:
+        return f"No game logs found for player: {player_name}", 404
 
-    with open("predictions.json", "r", encoding="utf-8") as f:
-        content = json.load(f)
-    prediction_df = pd.DataFrame(content["data"])
+    # Get fantasy prediction values from JSON cache
+    try:
+        with open("predictions.json", "r", encoding="utf-8") as f:
+            content = json.load(f)
+        prediction_df = pd.DataFrame(content["data"])
+    except Exception as e:
+        print(f"Error loading predictions.json: {e}")
+        prediction_df = pd.DataFrame()
 
     fantasy_row = prediction_df[prediction_df["PLAYER_NAME"] == player_name]
     fantasy_value = fantasy_row["NEXT_GAME_PTS"].values[0] if not fantasy_row.empty else None
     fantasy_value_week = fantasy_row["WEEKLY_SUM"].values[0] if not fantasy_row.empty else None
 
-    if dataLastFive_df.empty:
-        return f"No data found for player: {player_name}", 404
+    return render_template(
+        "player.html",
+        player_name=player_name,
+        games=dataLastFive_df.to_dict(orient="records"),
+        fantasy_value=fantasy_value,
+        fantasy_value_week=fantasy_value_week
+    )
 
-    return render_template("player.html",
-                           player_name=player_name,
-                           games=dataLastFive_df.to_dict(orient="records"),
-                           fantasy_value=fantasy_value,
-                           fantasy_value_week=fantasy_value_week)
 
 @app.route('/api/predictions')
 def predictions():

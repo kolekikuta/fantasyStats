@@ -51,15 +51,15 @@
     <tbody>
       {% for game in games %}
       <tr>
-        <td>{{ game.GAME_DATE.strftime('%Y-%m-%d') }}</td>
-        <td>{{ game.MATCHUP }}</td>
-        <td>{{ "%.1f"|format(game.MIN) }}</td>
-        <td>{{ game.PTS }}</td>
-        <td>{{ game.REB }}</td>
-        <td>{{ game.AST }}</td>
-        <td>{{ game.STL }}</td>
-        <td>{{ game.BLK }}</td>
-        <td>{{ "%.1f"|format(game.NBA_FANTASY_PTS) }}</td>
+        <td>{{ game["game_date"].strftime('%Y-%m-%d') }}</td>
+        <td>{{ game["matchup"] }}</td>
+        <td>{{ "%.1f"|format(game["min"]) }}</td>
+        <td>{{ game["pts"] }}</td>
+        <td>{{ game["reb"] }}</td>
+        <td>{{ game["ast"] }}</td>
+        <td>{{ game["stl"] }}</td>
+        <td>{{ game["blk"] }}</td>
+        <td>{{ "%.1f"|format(game["nba_fantasy_pts"]) }}</td>
       </tr>
       {% endfor %}
     </tbody>

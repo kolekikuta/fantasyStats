@@ -3,29 +3,79 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.preprocessing import OneHotEncoder
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from sqlalchemy.orm import Session
+from sqlalchemy.inspection import inspect
+from db import PlayerGameLog, NBAPlayers, engine, SessionLocal
 import json
 import os
-
-
 import joblib
 import pandas as pd
 
 ### ------------------ Data Retrieval ------------------ ###
 #import data from NBA API
 def fetch_historical_data():
+    print("Initializing historical game log database...")
     all_data = []
     seasons = ["2021-22", "2022-23", "2023-24", "2024-25"]
-    for season in seasons:
-        logs = playergamelogs.PlayerGameLogs(season_nullable=season).get_data_frames()[0]
-        logs = clean_data(logs)
-        all_data.append(logs)
-    return pd.concat(all_data, ignore_index=True)
 
+    with SessionLocal() as db:
+        for season in seasons:
+            logs = playergamelogs.PlayerGameLogs(season_nullable=season).get_data_frames()[0]
+            logs = clean_data(logs)
+            all_data.append(logs)
+
+            for _, row in logs.iterrows():
+                entry = PlayerGameLog(
+                    player_id=row["PLAYER_ID"],
+                        player_name=row["PLAYER_NAME"],
+                        game_id=row["GAME_ID"],
+                        game_date=pd.to_datetime(row["GAME_DATE"]),
+                        matchup=row["MATCHUP"],
+                        min=row["MIN"],
+                        fgm=row["FGM"],
+                        fga=row["FGA"],
+                        fg_pct=row["FG_PCT"],
+                        fg3m=row["FG3M"],
+                        fg3a=row["FG3A"],
+                        fg3_pct=row["FG3_PCT"],
+                        ftm=row["FTM"],
+                        fta=row["FTA"],
+                        ft_pct=row["FT_PCT"],
+                        oreb=row["OREB"],
+                        dreb=row["DREB"],
+                        reb=row["REB"],
+                        ast=row["AST"],
+                        tov=row["TOV"],
+                        stl=row["STL"],
+                        blk=row["BLK"],
+                        pts=row["PTS"],
+                        nba_fantasy_pts=row["NBA_FANTASY_PTS"],
+                        available_flag=row["AVAILABLE_FLAG"],
+                )
+                db.merge(entry)
+        db.commit()
+    print("Historical data initialized successfully.")
+
+    return
+
+def importPlayersdb():
+    with SessionLocal() as db:
+        players = commonallplayers.CommonAllPlayers(is_only_current_season=1).get_data_frames()[0]
+        players = players[["PERSON_ID", "DISPLAY_FIRST_LAST", "TEAM_ID", "TEAM_NAME"]]
+
+        for _, row in players.iterrows():
+            player = NBAPlayers(
+                id=row["PERSON_ID"],
+                name=row["DISPLAY_FIRST_LAST"],
+            )
+            db.merge(player)
+        db.commit()
+    return
 # Get game logs for last five games
-def getLastFive():
+def getLastFive(player_name):
+    print(f"Fetching last 5 game logs for {player_name}...")
 
-    print("Fetching player game logs for last 5 games...")
     currYear = datetime.now().year
     currMonth = datetime.now().month
 
@@ -35,30 +85,89 @@ def getLastFive():
         season_nullable = f"{currYear}-{currYear%100+1:02d}"
     season_type_nullable = "Playoffs"
 
-    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=10, season_type_nullable=season_type_nullable)
+    with SessionLocal() as db:
+        player = db.query(NBAPlayers).filter(NBAPlayers.name == player_name).first()
+        if not player:
+            print(f"No player found with name: {player_name}")
+            return pd.DataFrame()
 
-    data_df = player_game_logs.get_data_frames()[0]
-    data_df = clean_data(data_df)
+        logs = (
+            db.query(PlayerGameLog)
+            .filter(PlayerGameLog.player_id == player.id)
+            .order_by(PlayerGameLog.game_date.desc())
+            .limit(5)
+            .all()
+        )
 
-    data_df["GAME_DATE"] = pd.to_datetime(data_df["GAME_DATE"])
-    data_df = data_df.sort_values(by=["PLAYER_ID", "GAME_DATE"], ascending=[True, False])
-    data_df = data_df.groupby("PLAYER_ID").head(5).reset_index(drop=True)
+        needs_update = (
+            len(logs) < 5 or
+            any(log.game_date < datetime.now() - timedelta(days=7) for log in logs)
+        )
 
-    data_df["GAME_DATE"] = pd.to_datetime(data_df["GAME_DATE"]).dt.strftime("%Y-%m-%d")
+        if needs_update:
+            print("Logs missing or outdated, fetching from NBA API...")
 
-    output = {
-        "metadata": {
-            "generate_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        },
-        "data": data_df.to_dict(orient='records')
-    }
+            try:
+                new_logs_df = playergamelogs.PlayerGameLogs(
+                    player_id_nullable=player.id,
+                    season_nullable=season_nullable,
+                    season_type_nullable=season_type_nullable
+                ).get_data_frames()[0]
 
-    with open("data_last_five_temp.json", "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-    os.replace("data_last_five_temp.json", "data_last_five.json")
+                new_logs_df = clean_data(new_logs_df)
+                new_logs_df["GAME_DATE"] = pd.to_datetime(new_logs_df["GAME_DATE"])
 
-    print("Player game logs fetched successfully.")
-    return data_df
+                for _, row in new_logs_df.iterrows():
+                    exists = db.query(PlayerGameLog).filter_by(
+                        player_id=row["PLAYER_ID"], game_id=row["GAME_ID"]
+                    ).first()
+                    if not exists:
+                        db.add(PlayerGameLog(
+                            player_id=row["PLAYER_ID"],
+                            player_name=row["PLAYER_NAME"],
+                            game_id=row["GAME_ID"],
+                            game_date=row["GAME_DATE"],
+                            matchup=row["MATCHUP"],
+                            min=row["MIN"],
+                            fgm=row["FGM"],
+                            fga=row["FGA"],
+                            fg_pct=row["FG_PCT"],
+                            fg3m=row["FG3M"],
+                            fg3a=row["FG3A"],
+                            fg3_pct=row["FG3_PCT"],
+                            ftm=row["FTM"],
+                            fta=row["FTA"],
+                            ft_pct=row["FT_PCT"],
+                            oreb=row["OREB"],
+                            dreb=row["DREB"],
+                            reb=row["REB"],
+                            ast=row["AST"],
+                            tov=row["TOV"],
+                            stl=row["STL"],
+                            blk=row["BLK"],
+                            pts=row["PTS"],
+                            nba_fantasy_pts=row["NBA_FANTASY_PTS"],
+                            available_flag=row["AVAILABLE_FLAG"],
+                            generate_date=datetime.now(timezone.utc)
+                        ))
+                db.commit()
+
+                logs = (
+                    db.query(PlayerGameLog)
+                    .filter(PlayerGameLog.player_id == player.id)
+                    .order_by(PlayerGameLog.game_date.desc())
+                    .limit(5)
+                    .all()
+                )
+
+            except Exception as e:
+                print(f"Error fetching logs from API: {e}")
+                return pd.DataFrame()
+
+        return pd.DataFrame([
+            {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
+            for obj in logs
+        ])
 
 
 def getUpcomingMatchups():
@@ -437,7 +546,6 @@ def buildFeatureSet(data_df, processed_df, games_per_player=1):
 
     return selected_features
 """
-
 
 
 
