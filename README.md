@@ -39,5 +39,3 @@
 - **ML**: scikit-learn, pandas, joblib
 - **Storage**: SQLite (or Postgres-compatible)
 
-## 📂 Folder Structure
-
