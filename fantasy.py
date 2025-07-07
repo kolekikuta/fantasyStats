@@ -310,7 +310,7 @@ def buildFeatureSet():
 
     features_df["PLAYER_NAME"] = matchups_with_avgs["PLAYER_NAME"]
 
-    features_df.to_pickle('features.pkl')
+    features_df.to_pickle('pkl/features.pkl')
     print("Feature set built successfully.")
 
     return features_df
@@ -318,14 +318,14 @@ def buildFeatureSet():
 def loadData():
     print("Loading data...")
     try:
-        data_df = pd.read_pickle('data.pkl')
+        data_df = pd.read_pickle('pkl/data.pkl')
         print("Data loaded successfully from pickle file.")
         return data_df
     except:
         print("No data found. Fetching from NBA API...")
         data_df = fetch_historical_data()
         if data_df is not None:
-            data_df.to_pickle('data.pkl')
+            data_df.to_pickle('pkl/data.pkl')
             return data_df
         else:
             print("Failed to retrieve data.")
@@ -368,22 +368,22 @@ def preprocess_data(data_df):
 
     # for training only
     #train_cols = features_df.columns.tolist()
-    #joblib.dump(train_cols, 'train_columns.pkl')
+    #joblib.dump(train_cols, 'pkl/train_columns.pkl')
 
     # Add target + identifier
     features_df["PLAYER_NAME"] = data_df["PLAYER_NAME"]
     #features_df["NBA_FANTASY_PTS"] = data_df["NBA_FANTASY_PTS"]
 
 
-    features_df.to_pickle('features.pkl')
+    features_df.to_pickle('pkl/features.pkl')
     print("Data pre-processed successfully.")
 
     return features_df
 
 
 def one_hot_encode(df, col):
-    enc_opp = joblib.load('opp_encoder.pkl') if col == "OPPONENT" else joblib.load('team_encoder.pkl')
-    cols = joblib.load('opp_columns.pkl') if col == "OPPONENT" else joblib.load('team_columns.pkl')
+    enc_opp = joblib.load('pkl/opp_encoder.pkl') if col == "OPPONENT" else joblib.load('pkl/team_encoder.pkl')
+    cols = joblib.load('pkl/opp_columns.pkl') if col == "OPPONENT" else joblib.load('pkl/team_columns.pkl')
 
     encoded = enc_opp.transform(df[[col]])
 
@@ -398,8 +398,8 @@ def one_hot_encode_train(df):
                         ], axis=1)
 
     # persist both model and enc_opp and opp_cols
-    joblib.dump(enc_opp,  'opp_encoder.pkl')
-    joblib.dump(opp_cols, 'opp_columns.pkl')
+    joblib.dump(enc_opp,  'pkl/opp_encoder.pkl')
+    joblib.dump(opp_cols, 'pkl/opp_columns.pkl')
 
     enc_team = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
     team_train = enc_team.fit_transform(df[["TEAM"]])
@@ -408,8 +408,8 @@ def one_hot_encode_train(df):
                           pd.DataFrame(team_train, columns=team_cols, index=df.index)
                         ], axis=1)
     # persist both model and enc_team and team_cols
-    joblib.dump(enc_team,  'team_encoder.pkl')
-    joblib.dump(team_cols, 'team_columns.pkl')
+    joblib.dump(enc_team,  'pkl/team_encoder.pkl')
+    joblib.dump(team_cols, 'pkl/team_columns.pkl')
 
     return
 
@@ -436,7 +436,7 @@ def trainModel(data_df):
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
 
-    joblib.dump(model, 'nba_fantasy_model.pkl')
+    joblib.dump(model, 'pkl/nba_fantasy_model.pkl')
 
     print("Model trained successfully.")
 
@@ -467,7 +467,7 @@ def predict(X_test):
     if "PLAYER_NAME" in X_test.columns:
         X_test = X_test.drop(columns=["PLAYER_NAME"])
 
-    train_cols = joblib.load('train_columns.pkl')
+    train_cols = joblib.load('pkl/train_columns.pkl')
     X_test_aligned = X_test.reindex(columns=train_cols, fill_value=0)
 
     # Get predictions
@@ -522,43 +522,12 @@ def predict(X_test):
 def loadModel():
     print("Loading model...")
     try:
-        model = joblib.load('nba_fantasy_model.pkl')
+        model = joblib.load('pkl/nba_fantasy_model.pkl')
         print("Model loaded successfully.")
         return model
     except FileNotFoundError:
         print("Model file not found. Please train the model first.")
         return None
-"""
-def buildFeatureSet(data_df, processed_df, games_per_player=1):
-    print(f"Building feature set for all players...")
-
-    if data_df is None or processed_df is None:
-        print("Missing data for building feature set.")
-        return None
-
-    # Make sure GAME_DATE is datetime for proper sorting
-    data_df["GAME_DATE"] = pd.to_datetime(data_df["GAME_DATE"])
-
-    # Sort data by date (latest first)
-    data_df = data_df.sort_values(by="GAME_DATE", ascending=False)
-
-    # Get the indices of the N most recent games for each player
-    recent_indices = (
-        data_df.groupby("PLAYER_NAME")
-               .head(games_per_player)
-               .index
-    )
-
-    # Filter the processed feature set to only include those games
-    selected_features = processed_df.loc[recent_indices]
-
-    print(f"Feature set built for {selected_features['PLAYER_NAME'].nunique()} players.")
-    selected_features.drop(columns=["NBA_FANTASY_PTS"], inplace=True, errors='ignore')
-
-    return selected_features
-"""
-
-
 
 #data_df = loadData()
 #processed_df = preprocess_data(data_df)
