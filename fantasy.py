@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy.inspection import inspect
-from db import PlayerGameLog, NBAPlayers, engine, SessionLocal
+from db import PlayerGameLog, NBAPlayers, PlayerPrediction, engine, SessionLocal
 import json
 import os
 import joblib
@@ -99,10 +99,13 @@ def getLastFive(player_name):
             .all()
         )
 
-        needs_update = (
-            len(logs) < 5 or
-            any(log.game_date < datetime.now() - timedelta(days=7) for log in logs)
-        )
+        if datetime.now().month in [7, 8, 9]:
+            needs_update = len(logs) < 5
+        else:
+            needs_update = (
+                len(logs) < 5 or
+                any(log.game_date < datetime.now(timezone.utc) - timedelta(days=30) for log in logs)
+            )
 
         if needs_update:
             print("Logs missing or outdated, fetching from NBA API...")
@@ -480,14 +483,9 @@ def predict(X_test):
         .rename(columns={"PREDICTED_FANTASY_PTS": "WEEKLY_SUM"})
     )
 
-    # 2. Next-game projection: pick the earliest GAME_DATE per player
-    #    First, sort by date
-    results_by_date = results_df.sort_values(["PLAYER_NAME", "GAME_DATE"])
-    #    Then drop duplicates keeping the first per player
     next_game = (
-        results_by_date
-        .drop_duplicates("PLAYER_NAME", keep="first")
-        .loc[:, ["PLAYER_NAME", "PREDICTED_FANTASY_PTS"]]
+        results_df.sort_values(["PLAYER_NAME", "GAME_DATE"])
+        .drop_duplicates("PLAYER_NAME", keep="first")[["PLAYER_NAME", "PREDICTED_FANTASY_PTS"]]
         .rename(columns={"PREDICTED_FANTASY_PTS": "NEXT_GAME_PTS"})
     )
 
@@ -495,15 +493,19 @@ def predict(X_test):
     summary = pd.merge(weekly_sum, next_game, on="PLAYER_NAME")
     summary = summary.sort_values("WEEKLY_SUM", ascending=False).reset_index(drop=True)
 
-    output = {
-        "metadata": {
-            "generate_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        },
-        "data": summary.to_dict(orient='records')
-    }
+    generate_time = datetime.now(timezone.utc)
 
-    with open('predictions.json', 'w', encoding='utf-8') as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
+    with SessionLocal() as db:
+        db.query(PlayerPrediction).delete()  # Clear old predictions
+
+        for _, row in summary.iterrows():
+            db.add(PlayerPrediction(
+                player_name=row["PLAYER_NAME"],
+                weekly_sum=row["WEEKLY_SUM"],
+                next_game_pts=row["NEXT_GAME_PTS"],
+                generate_date=generate_time
+            ))
+        db.commit()
 
     print("Predictions made successfully.")
     return summary

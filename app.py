@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from datetime import datetime
+from sqlalchemy import func
+from db import SessionLocal, PlayerPrediction
+from datetime import datetime, timezone, timedelta
 import fantasy
 import pandas as pd
 import joblib
@@ -58,26 +60,32 @@ def player_page():
 
 @app.route('/api/predictions')
 def predictions():
-
     try:
-        with open("predictions.json", "r", encoding="utf-8") as f:
-            content = json.load(f)
+        with SessionLocal() as db:
+            # Check the most recent prediction time
+            latest_prediction = db.query(func.max(PlayerPrediction.generate_date)).scalar()
 
-        generate_date_str = content.get("metadata", {}).get("generate_date", None)
-        generate_date = datetime.strptime(generate_date_str, "%Y-%m-%d %H:%M:%S") if generate_date_str else None
-        if datetime.now() - generate_date > pd.Timedelta(days=1):
-            print("Predictions are older than 24 hours. Recomputing...")
-            features = fantasy.buildFeatureSet()
-            predictions_df = fantasy.predict(features)
-            return jsonify(predictions_df.to_dict(orient="records"))
-        else:
-            print("Using cached predictions.")
-            return jsonify(content["data"])
+            if not latest_prediction or datetime.now(timezone.utc) - latest_prediction > timedelta(days=1):
+                print("Predictions are older than 24 hours. Recomputing...")
+                features = fantasy.buildFeatureSet()
+                fantasy.predict(features)  # This writes new data to DB
+
+            # Load fresh predictions from DB
+            predictions = db.query(PlayerPrediction).all()
+            prediction_data = [
+                {
+                    "PLAYER_NAME": p.player_name,
+                    "WEEKLY_SUM": round(p.weekly_sum, 1),
+                    "NEXT_GAME_PTS": round(p.next_game_pts, 1),
+                }
+                for p in predictions
+            ]
+
+            return jsonify(prediction_data)
+
     except Exception as e:
-        print("No valid predictions found. Generating new.", e)
-        features = fantasy.buildFeatureSet()
-        predictions_df = fantasy.predict(features)
-        return jsonify(predictions_df.to_dict(orient="records"))
+        print("Error fetching/generating predictions:", e)
+        return jsonify({"error": "Failed to load predictions"}), 500
 
 @app.route('/api/data')
 def data():
