@@ -10,7 +10,7 @@
 - 🧠 **ML Model Pipeline**
   - Feature engineering from recent player performance
   - Categorical encoding and scaling
-  - Trained regression model (Random Forrest Regressor)
+  - Trained regression model (Random Forest Regressor)
 
 - 📊 **Last 5 Game Logs per Player**
   - Automatically fetches from NBA API if data is outdated or missing
