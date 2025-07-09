@@ -135,7 +135,7 @@ def getLastFive(player_name):
                 new_logs_df = playergamelogs.PlayerGameLogs(
                     player_id_nullable=player.id,
                     season_nullable=season_nullable,
-                    season_type_nullable=season_type_nullable
+                    season_type_nullable=season_type_nullable,
                     headers=custom_headers
                 ).get_data_frames()[0]
 
