@@ -7,7 +7,6 @@ import fantasy
 import pandas as pd
 import joblib
 import json
-from memory import print_memory_usage
 
 app = Flask(__name__)
 CORS(app)

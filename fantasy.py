@@ -11,7 +11,6 @@ import json
 import os
 import joblib
 import pandas as pd
-from memory import print_memory_usage
 
 
 custom_headers = {
