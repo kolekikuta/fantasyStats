@@ -7,6 +7,7 @@ import fantasy
 import pandas as pd
 import joblib
 import json
+from memory import print_memory_usage
 
 app = Flask(__name__)
 CORS(app)
@@ -87,7 +88,6 @@ def predictions():
                 }
                 for p in predictions
             ]
-
             return jsonify(prediction_data)
 
     except Exception as e:

@@ -11,6 +11,7 @@ import json
 import os
 import joblib
 import pandas as pd
+from memory import print_memory_usage
 
 
 custom_headers = {
@@ -197,13 +198,13 @@ def getLastFive(player_name):
 
 def getUpcomingMatchups():
     print("Fetching upcoming matchups...")
-    players_df = commonallplayers.CommonAllPlayers(is_only_current_season=1, headers=custom_headers).get_data_frames()[0]
+    players_df = commonallplayers.CommonAllPlayers(is_only_current_season=1).get_data_frames()[0]
     players_df = players_df[["PERSON_ID", "DISPLAY_FIRST_LAST", "TEAM_ID", "TEAM_NAME"]]
 
     matchup_records = []
     today = datetime.now()
 
-    schedule = scheduleleaguev2.ScheduleLeagueV2(headers=custom_headers)
+    schedule = scheduleleaguev2.ScheduleLeagueV2()
     games_df = schedule.season_games.get_data_frame()
     weeks_df = schedule.season_weeks.get_data_frame()
 
@@ -288,7 +289,7 @@ def buildFeatureSet():
         season_nullable = f"{currYear-1}-{currYear%100:02d}"
     else:
         season_nullable = f"{currYear}-{currYear%100+1:02d}"
-    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=10, headers=custom_headers)
+    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=10)
 
     data_df = player_game_logs.get_data_frames()[0]
     data_df = clean_data(data_df)
@@ -475,6 +476,7 @@ def predict(X_test):
 
     print("Making predictions...")
 
+
     X_original = X_test.copy()
 
     if "PLAYER_NAME" in X_test.columns:
@@ -541,6 +543,7 @@ def loadModel():
     except FileNotFoundError:
         print("Model file not found. Please train the model first.")
         return None
+
 
 #data_df = loadData()
 #processed_df = preprocess_data(data_df)
