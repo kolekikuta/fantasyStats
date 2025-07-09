@@ -12,6 +12,18 @@ import os
 import joblib
 import pandas as pd
 
+
+custom_headers = {
+    'Host': 'stats.nba.com',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'max-age=0',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
+
 ### ------------------ Data Retrieval ------------------ ###
 #import data from NBA API
 def fetch_historical_data():
@@ -21,7 +33,7 @@ def fetch_historical_data():
 
     with SessionLocal() as db:
         for season in seasons:
-            logs = playergamelogs.PlayerGameLogs(season_nullable=season).get_data_frames()[0]
+            logs = playergamelogs.PlayerGameLogs(season_nullable=season, headers=custom_headers).get_data_frames()[0]
             logs = clean_data(logs)
             all_data.append(logs)
 
@@ -61,7 +73,7 @@ def fetch_historical_data():
 
 def importPlayersdb():
     with SessionLocal() as db:
-        players = commonallplayers.CommonAllPlayers(is_only_current_season=1).get_data_frames()[0]
+        players = commonallplayers.CommonAllPlayers(is_only_current_season=1, headers=custom_headers).get_data_frames()[0]
         players = players[["PERSON_ID", "DISPLAY_FIRST_LAST", "TEAM_ID", "TEAM_NAME"]]
 
         for _, row in players.iterrows():
@@ -124,6 +136,7 @@ def getLastFive(player_name):
                     player_id_nullable=player.id,
                     season_nullable=season_nullable,
                     season_type_nullable=season_type_nullable
+                    headers=custom_headers
                 ).get_data_frames()[0]
 
                 new_logs_df = clean_data(new_logs_df)
@@ -184,13 +197,13 @@ def getLastFive(player_name):
 
 def getUpcomingMatchups():
     print("Fetching upcoming matchups...")
-    players_df = commonallplayers.CommonAllPlayers(is_only_current_season=1).get_data_frames()[0]
+    players_df = commonallplayers.CommonAllPlayers(is_only_current_season=1, headers=custom_headers).get_data_frames()[0]
     players_df = players_df[["PERSON_ID", "DISPLAY_FIRST_LAST", "TEAM_ID", "TEAM_NAME"]]
 
     matchup_records = []
     today = datetime.now()
 
-    schedule = scheduleleaguev2.ScheduleLeagueV2()
+    schedule = scheduleleaguev2.ScheduleLeagueV2(headers=custom_headers)
     games_df = schedule.season_games.get_data_frame()
     weeks_df = schedule.season_weeks.get_data_frame()
 
@@ -275,7 +288,7 @@ def buildFeatureSet():
         season_nullable = f"{currYear-1}-{currYear%100:02d}"
     else:
         season_nullable = f"{currYear}-{currYear%100+1:02d}"
-    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=10)
+    player_game_logs = playergamelogs.PlayerGameLogs(season_nullable=season_nullable, last_n_games_nullable=10, headers=custom_headers)
 
     data_df = player_game_logs.get_data_frames()[0]
     data_df = clean_data(data_df)
