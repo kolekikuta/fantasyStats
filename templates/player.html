@@ -30,12 +30,23 @@
       color: white;
     }
 
+    button {
+      padding: 10px;
+      background-color: #3F3F46;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
 
   </style>
 </head>
 <body>
-
-  <h1>{{ player_name }}</h1>
+  <div class=container>
+    <h1>{{ player_name }}</h1>
+    <button onclick="window.location.href='/'">Home</button>
+  </div>
   <h2>Predicted Fantasy Value: {{ fantasy_value }}</h2>
   <h2>Predicted Weekly Sum: {{ fantasy_value_week }}</h2>
   <table>
