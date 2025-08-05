@@ -1,0 +1,13 @@
+name: Trigger Prediction Rebuild
+
+on:
+  schedule:
+    - cron: '0 7 * * *'  # Midnight PT
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Render endpoint
+        run: |
+          curl https://nba-fantasy-predictor.onrender.com/api/predictions
